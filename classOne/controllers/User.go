@@ -1,0 +1,144 @@
+package controllers
+
+import (
+	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/orm"
+	"classOne/models"
+)
+
+type RegController struct {
+	beego.Controller
+}
+
+//显示注册页
+func (this*RegController)ShowReg(){
+	this.TplName = "register.html"
+}
+
+/*
+1.拿到浏览器传递的数据
+
+2.数据处理
+
+3.插入数据库（数据库表User）
+
+4.返回视图
+*/
+
+//注册业务
+func(this*RegController)HandleReg(){
+	//1.拿到浏览器传递的数据
+	name := this.GetString("userName")
+	passwd := this.GetString("password")
+	//2.数据处理
+	if name == "" || passwd == ""{
+		beego.Info("用户名或者密码不能为空")
+		this.TplName = "register.html"
+		return
+	}
+	//3.插入数据库
+		//1.获取ORM对象
+		o := orm.NewOrm()
+
+		//2.获取插入对象
+		user := models.User{}
+		//3.插入操作
+		user.Name = name
+		user.PassWord = passwd
+
+		_,err := o.Insert(&user)
+		if err != nil{
+			beego.Info("插入数据失败")
+		}
+		//4.返回登陆
+
+		//this.TplName = "login.html"
+		//this.Ctx.WriteString("注册成功")
+		this.Redirect("/",302)
+		//
+
+}
+
+
+
+
+type LoginController struct {
+	beego.Controller
+}
+
+//展示登陆页
+func (this*LoginController)ShowLogin(){
+	name := this.Ctx.GetCookie("userName")
+
+	if name != ""{
+		this.Data["userName"] = name
+		this.Data["check"] = "checked"
+	}
+	this.Data["data"] = "aaa"
+	this.TplName = "login.html"
+}
+
+/*
+1.拿到浏览器数据
+
+2.数据处理
+
+3.查找数据库
+
+4.返回视图
+*/
+//登陆业务处理
+func (this*LoginController)HandleLogin(){
+	//1.那数据
+	name := this.GetString("userName")
+	passwd := this.GetString("password")
+	//beego.Info(name,passwd)
+	//2.数据处理
+	if name =="" || passwd ==""{
+		beego.Info("用户名和密码不能为空")
+		this.TplName = "login.html"
+		return
+	}
+
+	//3.查找数据
+		//1.获取orm对象
+		o := orm.NewOrm()
+
+		//2.获取查询对象
+		user := models.User{}
+		//3.查询
+		user.Name = name
+		err:=o.Read(&user,"Name")
+		if err != nil{
+			beego.Info("用户名失败")
+			this.TplName = "login.html"
+			return
+		}
+
+		//4.判断密码是否一直
+
+		if user.PassWord != passwd{
+			beego.Info("密码失败")
+			this.TplName = "login.html"
+			return
+		}
+
+
+		//记住用户名
+		check:=this.GetString("remember")
+		beego.Info(check)
+		if check == "on"{
+			this.Ctx.SetCookie("userName",name,600)
+		}else {
+			this.Ctx.SetCookie("userName","sss",-1)
+		}
+
+		this.SetSession("userName",name)
+
+
+		//4.返回试图
+		//this.Ctx.WriteString("登陆成功")
+		this.Redirect("/Article/ShowArticle",302)
+
+
+}
